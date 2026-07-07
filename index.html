@@ -373,6 +373,10 @@ input:checked + .slider:before{transform:translateX(20px);}
     </div>
     <button class="btn btn-primary" onclick="handleLogin()">Sign In</button>
     <div class="error-msg" id="loginError"></div>
+    <div style="margin-top:14px;display:flex;justify-content:center;gap:16px;">
+      <a href="#" onclick="handleForgotPassword();return false;" style="color:var(--text-dim);font-size:12px;text-decoration:underline;">Forgot password?</a>
+      <a href="#" onclick="handleFirstTimeSetup();return false;" style="color:var(--text-dim);font-size:12px;text-decoration:underline;">First time setup</a>
+    </div>
   </div>
 </div>
 
