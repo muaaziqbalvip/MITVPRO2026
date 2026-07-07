@@ -401,6 +401,7 @@ input:checked + .slider:before{transform:translateX(20px);}
   <div class="page active" id="liveTab">
     <div class="page-header">
       <h1>Live TV <span class="count" id="liveCount"></span></h1>
+      <button class="btn btn-ghost btn-sm" onclick="openBulkImportModal('LIVE')">📥 Bulk Import M3U</button>
     </div>
     <div class="search-bar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -413,6 +414,7 @@ input:checked + .slider:before{transform:translateX(20px);}
   <div class="page" id="moviesTab">
     <div class="page-header">
       <h1>Movies <span class="count" id="moviesCount"></span></h1>
+      <button class="btn btn-ghost btn-sm" onclick="openBulkImportModal('MOVIE')">📥 Bulk Import M3U</button>
     </div>
     <div class="search-bar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -678,6 +680,44 @@ input:checked + .slider:before{transform:translateX(20px);}
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="extendProMonth()">+ 1 Month</button>
       <button class="btn btn-primary" onclick="saveUserPro()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BULK IMPORT M3U MODAL ============ -->
+<div class="modal-overlay" id="bulkImportModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2 id="bulkImportTitle">Bulk Import M3U — Live TV</h2>
+      <button class="modal-close" onclick="closeModal('bulkImportModal')">✕</button>
+    </div>
+    <input type="hidden" id="bulkImportCategory">
+
+    <div class="field">
+      <label>Paste full M3U / M3U8 playlist</label>
+      <textarea id="bulkM3uText" placeholder="#EXTM3U
+#EXTINF:-1 tvg-logo=&quot;https://...logo.png&quot; group-title=&quot;News&quot;,ARY News
+https://example.com/stream1.m3u8
+#EXTINF:-1 tvg-logo=&quot;https://...logo.png&quot; group-title=&quot;Entertainment&quot;,Geo TV
+https://example.com/stream2.m3u8" style="min-height:180px;font-family:monospace;font-size:12px;"></textarea>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="label">Mark all as free</div>
+        <div class="sub">Off = all imported items are Pro-only</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="bulkIsFree" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div id="bulkPreviewBox" style="display:none;margin-top:12px;padding:12px 14px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-dim);"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="previewBulkImport()">Preview</button>
+      <button class="btn btn-primary" id="confirmBulkImportBtn" onclick="confirmBulkImport()" style="display:none;">Import All</button>
     </div>
   </div>
 </div>

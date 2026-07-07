@@ -581,6 +581,177 @@ function saveUpdateSettings() {
 }
 
 // ============================================================
+// BULK IMPORT: paste a full M3U playlist, parse it, push every
+// entry as its own live_channels or movies node in one batch.
+// ============================================================
+
+let bulkParsedItems = [];
+
+function openBulkImportModal(category) {
+  document.getElementById('bulkImportCategory').value = category;
+  document.getElementById('bulkImportTitle').textContent =
+    'Bulk Import M3U — ' + (category === 'LIVE' ? 'Live TV' : 'Movies');
+  document.getElementById('bulkM3uText').value = '';
+  document.getElementById('bulkIsFree').checked = true;
+  document.getElementById('bulkPreviewBox').style.display = 'none';
+  document.getElementById('bulkPreviewBox').innerHTML = '';
+  document.getElementById('confirmBulkImportBtn').style.display = 'none';
+  bulkParsedItems = [];
+  document.getElementById('bulkImportModal').classList.add('active');
+}
+
+/**
+ * Parses standard M3U/M3U8 text into an array of
+ * { title, streamUrl, logoUrl, groupTitle }.
+ * Handles the common #EXTINF attribute formats:
+ *   #EXTINF:-1 tvg-logo="..." group-title="...",Channel Name
+ *   #EXTINF:-1,Channel Name
+ * Any line that isn't a comment and isn't blank is treated as the
+ * stream URL for the preceding #EXTINF line.
+ */
+function parseM3U(text) {
+  const lines = text.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+  const items = [];
+  let pending = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('#EXTINF')) {
+      const logoMatch = line.match(/tvg-logo="([^"]*)"/i);
+      const groupMatch = line.match(/group-title="([^"]*)"/i);
+      const nameMatch = line.match(/,(.*)$/); // everything after the last comma
+      pending = {
+        title: nameMatch ? nameMatch[1].trim() : 'Untitled',
+        logoUrl: logoMatch ? logoMatch[1].trim() : '',
+        groupTitle: groupMatch ? groupMatch[1].trim() : 'General'
+      };
+    } else if (line.startsWith('#')) {
+      // other M3U directives (#EXTM3U, #EXTGRP, #EXTVLCOPT, etc.) — ignore
+      continue;
+    } else {
+      // this line is a URL
+      if (pending) {
+        items.push({
+          title: pending.title,
+          streamUrl: line,
+          logoUrl: pending.logoUrl,
+          groupTitle: pending.groupTitle
+        });
+        pending = null;
+      } else if (/^https?:\/\//i.test(line)) {
+        // URL with no preceding #EXTINF — still import it with a fallback title
+        items.push({
+          title: 'Channel ' + (items.length + 1),
+          streamUrl: line,
+          logoUrl: '',
+          groupTitle: 'General'
+        });
+      }
+    }
+  }
+
+  return items;
+}
+
+function previewBulkImport() {
+  const text = document.getElementById('bulkM3uText').value;
+  if (!text.trim()) {
+    showToast('Paste an M3U playlist first.', 'error');
+    return;
+  }
+
+  bulkParsedItems = parseM3U(text);
+  const box = document.getElementById('bulkPreviewBox');
+  const confirmBtn = document.getElementById('confirmBulkImportBtn');
+
+  if (bulkParsedItems.length === 0) {
+    box.style.display = 'block';
+    box.innerHTML = '⚠️ No channels detected. Check the playlist format — each entry needs a URL line after its #EXTINF line.';
+    confirmBtn.style.display = 'none';
+    return;
+  }
+
+  const previewList = bulkParsedItems.slice(0, 6).map(function (item) {
+    return '• ' + escapeHtml(item.title);
+  }).join('<br>');
+  const more = bulkParsedItems.length > 6 ? '<br>…and ' + (bulkParsedItems.length - 6) + ' more' : '';
+
+  box.style.display = 'block';
+  box.innerHTML =
+    '✅ Found <strong style="color:var(--text)">' + bulkParsedItems.length + '</strong> entries:<br><br>' +
+    previewList + more;
+  confirmBtn.style.display = 'inline-flex';
+}
+
+function confirmBulkImport() {
+  if (bulkParsedItems.length === 0) {
+    showToast('Nothing to import — click Preview first.', 'error');
+    return;
+  }
+
+  const category = document.getElementById('bulkImportCategory').value; // 'LIVE' | 'MOVIE'
+  const isLive = category === 'LIVE';
+  const isFree = document.getElementById('bulkIsFree').checked;
+  const node = isLive ? 'live_channels' : 'movies';
+  const baseTime = Date.now();
+
+  const updates = {};
+  bulkParsedItems.forEach(function (item, idx) {
+    const newKey = db.ref(node).push().key;
+    const payload = {
+      title: item.title,
+      streamUrl: item.streamUrl,
+      sourceType: guessSourceType(item.streamUrl),
+      groupTitle: item.groupTitle || 'General',
+      category: category,
+      year: '',
+      language: '',
+      description: '',
+      isFree: isFree,
+      isFeatured: false,
+      sortOrder: baseTime + idx,
+      addedTimestamp: baseTime
+    };
+    if (isLive) {
+      payload.logoUrl = item.logoUrl || '';
+      payload.posterUrl = '';
+    } else {
+      payload.posterUrl = item.logoUrl || '';
+      payload.logoUrl = '';
+    }
+    updates['/' + node + '/' + newKey] = payload;
+  });
+
+  const confirmBtn = document.getElementById('confirmBulkImportBtn');
+  confirmBtn.textContent = 'Importing...';
+  confirmBtn.disabled = true;
+
+  db.ref().update(updates)
+    .then(function () {
+      showToast('Imported ' + bulkParsedItems.length + ' items successfully.', 'success');
+      closeModal('bulkImportModal');
+      confirmBtn.textContent = 'Import All';
+      confirmBtn.disabled = false;
+    })
+    .catch(function (err) {
+      showToast(err.message, 'error');
+      confirmBtn.textContent = 'Import All';
+      confirmBtn.disabled = false;
+    });
+}
+
+/** Best-effort guess at sourceType from the URL, so imported items get a
+ * sensible default (admin can still edit individual entries afterward). */
+function guessSourceType(url) {
+  const lower = url.toLowerCase();
+  if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'YOUTUBE';
+  if (lower.endsWith('.mp4')) return 'MP4';
+  if (lower.endsWith('.m3u8') || lower.includes('.m3u8?')) return 'M3U8';
+  return 'XTREAM'; // masked/proxy links and anything else fall back to this
+}
+
+// ============================================================
 // SHARED UI HELPERS
 // ============================================================
 
