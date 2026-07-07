@@ -59,12 +59,89 @@ function handleLogin() {
 
   auth.signInWithEmailAndPassword(email, password)
     .catch(function (error) {
-      if (error.code === 'auth/user-not-found') {
-        // First-time setup: create the admin account automatically.
+      // Newer Firebase SDKs collapse "wrong password" and "user not found"
+      // into the single generic code auth/invalid-credential. So instead of
+      // only handling auth/user-not-found, we treat any of these codes as
+      // "this account may not exist yet" and try to auto-create it.
+      const noAccountCodes = [
+        'auth/user-not-found',
+        'auth/invalid-credential',
+        'auth/invalid-login-credentials'
+      ];
+
+      if (noAccountCodes.indexOf(error.code) !== -1) {
         auth.createUserWithEmailAndPassword(email, password)
+          .then(function () {
+            errorEl.style.color = 'var(--live)';
+            errorEl.textContent = 'Admin account created — signing you in...';
+          })
           .catch(function (createError) {
-            errorEl.textContent = createError.message;
+            if (createError.code === 'auth/email-already-in-use') {
+              // Account DOES exist, so the original error really was a wrong
+              // password. Be explicit so the user knows to reset it.
+              errorEl.textContent = 'Wrong password for this email. Tap "Forgot password?" below to reset it.';
+            } else if (createError.code === 'auth/weak-password') {
+              errorEl.textContent = 'Password must be at least 6 characters.';
+            } else {
+              errorEl.textContent = createError.message;
+            }
           });
+      } else if (error.code === 'auth/too-many-requests') {
+        errorEl.textContent = 'Too many attempts. Please wait a bit and try again, or reset your password.';
+      } else {
+        errorEl.textContent = error.message;
+      }
+    });
+}
+
+function handleForgotPassword() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const errorEl = document.getElementById('loginError');
+  errorEl.style.color = '';
+  errorEl.textContent = '';
+
+  if (!email) {
+    errorEl.textContent = 'Enter your admin email above first, then tap "Forgot password?".';
+    return;
+  }
+
+  auth.sendPasswordResetEmail(email)
+    .then(function () {
+      errorEl.style.color = 'var(--live)';
+      errorEl.textContent = 'Reset link sent to ' + email + '. Check your inbox (and spam folder).';
+    })
+    .catch(function (error) {
+      errorEl.style.color = '';
+      if (error.code === 'auth/user-not-found') {
+        errorEl.textContent = 'No account exists for this email yet. Just tap "Sign In" with a new password to create it.';
+      } else {
+        errorEl.textContent = error.message;
+      }
+    });
+}
+
+function handleFirstTimeSetup() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  errorEl.style.color = '';
+  errorEl.textContent = '';
+
+  if (!email || !password) {
+    errorEl.textContent = 'Enter the email and a password (min 6 characters) you want to use, then tap "First time setup".';
+    return;
+  }
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(function () {
+      errorEl.style.color = 'var(--live)';
+      errorEl.textContent = 'Admin account created — signing you in...';
+    })
+    .catch(function (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        errorEl.textContent = 'This email already has an account. Just tap "Sign In", or "Forgot password?" if needed.';
+      } else if (error.code === 'auth/weak-password') {
+        errorEl.textContent = 'Password must be at least 6 characters.';
       } else {
         errorEl.textContent = error.message;
       }
