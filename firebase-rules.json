@@ -1,0 +1,34 @@
+{
+  "rules": {
+    "live_channels": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "movies": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "series_index": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "series": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "epg": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "app_config": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email == root.child('app_config/admin_email').val()"
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == root.child('app_config/admin_email').val())",
+        ".write": "auth != null && (auth.uid == $uid || auth.token.email == root.child('app_config/admin_email').val())"
+      }
+    }
+  }
+}

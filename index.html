@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MITV Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;
+  --surface:#141414;
+  --surface2:#1c1c1c;
+  --surface3:#242424;
+  --border:#2a2a2a;
+  --red:#e50914;
+  --red-dark:#b20710;
+  --red-glow:#ff1b2d;
+  --gold:#d4af37;
+  --text:#ffffff;
+  --text-dim:#a3a3a3;
+  --text-faint:#666666;
+  --live:#2ecc71;
+  --warn:#f5a623;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+.brand{font-family:'Bebas Neue',sans-serif;letter-spacing:0.04em;}
+
+/* ---------- Login screen ---------- */
+#loginScreen{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(ellipse at top, rgba(229,9,20,0.12), transparent 60%),
+    var(--bg);
+  padding:24px;
+}
+.login-card{
+  width:100%;
+  max-width:380px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:40px 32px;
+  text-align:center;
+}
+.login-logo{
+  font-size:52px;
+  color:var(--red);
+  margin-bottom:4px;
+}
+.login-sub{
+  color:var(--text-dim);
+  font-size:13px;
+  margin-bottom:32px;
+}
+.field{
+  text-align:left;
+  margin-bottom:16px;
+}
+.field label{
+  display:block;
+  font-size:12px;
+  color:var(--text-dim);
+  margin-bottom:6px;
+  font-weight:500;
+}
+.field input, .field select, .field textarea{
+  width:100%;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  color:var(--text);
+  font-size:14px;
+  font-family:inherit;
+  transition:border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus{
+  outline:none;
+  border-color:var(--red);
+}
+.field textarea{resize:vertical;min-height:70px;}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:none;
+  border-radius:50px;
+  padding:12px 22px;
+  font-size:14px;
+  font-weight:600;
+  font-family:inherit;
+  cursor:pointer;
+  transition:transform .1s, opacity .15s;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--red);color:#fff;width:100%;padding:14px;}
+.btn-primary:hover{background:var(--red-glow);}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface3);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(229,9,20,0.4);}
+.btn-danger:hover{background:rgba(229,9,20,0.1);}
+.btn-sm{padding:8px 14px;font-size:12px;}
+.error-msg{
+  color:var(--red-glow);
+  font-size:12px;
+  margin-top:12px;
+  min-height:16px;
+}
+
+/* ---------- App shell ---------- */
+#appShell{display:none;min-height:100vh;}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+  background:rgba(10,10,10,0.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-logo{font-size:26px;color:var(--red);}
+.topbar-title{font-size:13px;color:var(--text-dim);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface2);
+  border-radius:50px;
+  padding:6px 12px;
+  font-size:11px;
+  color:var(--text-dim);
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--live);}
+
+.tabs{
+  display:flex;gap:4px;
+  padding:0 24px;
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;
+}
+.tab{
+  padding:14px 18px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-faint);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:color .15s;
+}
+.tab.active{color:var(--text);border-color:var(--red);}
+.tab:hover{color:var(--text);}
+
+.page{display:none;padding:24px;max-width:1200px;margin:0 auto;}
+.page.active{display:block;}
+
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.page-header h1{font-size:22px;font-weight:700;}
+.page-header .count{color:var(--text-dim);font-size:13px;font-weight:400;margin-left:8px;}
+
+.search-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:9px 14px;
+  margin-bottom:20px;
+  max-width:340px;
+}
+.search-bar input{
+  background:none;border:none;color:var(--text);font-size:13px;width:100%;
+}
+.search-bar input:focus{outline:none;}
+.search-bar svg{flex-shrink:0;color:var(--text-faint);}
+
+/* ---------- Content grid/list ---------- */
+.content-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(160px,1fr));
+  gap:16px;
+}
+.content-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  cursor:pointer;
+  transition:border-color .15s, transform .15s;
+}
+.content-card:hover{border-color:#3a3a3a;transform:translateY(-2px);}
+.card-thumb{
+  width:100%;aspect-ratio:2/3;
+  background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  background-size:cover;background-position:center;
+}
+.card-thumb.live{aspect-ratio:1/1;}
+.card-thumb svg{color:var(--text-faint);width:32px;height:32px;}
+.badge{
+  position:absolute;top:8px;left:8px;
+  font-size:9px;font-weight:700;
+  padding:3px 7px;border-radius:4px;
+  letter-spacing:0.03em;
+}
+.badge.live-badge{background:var(--live);color:#000;}
+.badge.pro-badge{background:var(--gold);color:#000;top:8px;right:8px;left:auto;}
+.card-body{padding:10px 12px;}
+.card-title{font-size:13px;font-weight:600;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-meta{font-size:11px;color:var(--text-faint);margin-top:4px;}
+
+.empty-state{
+  text-align:center;padding:60px 20px;color:var(--text-dim);
+}
+.empty-state svg{width:48px;height:48px;color:var(--text-faint);margin-bottom:16px;}
+.empty-state h3{font-size:16px;color:var(--text);margin-bottom:6px;}
+.empty-state p{font-size:13px;}
+
+/* ---------- FAB ---------- */
+.fab{
+  position:fixed;bottom:28px;right:28px;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--red);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border:none;
+  box-shadow:0 8px 24px rgba(229,9,20,0.4);
+  transition:transform .15s;
+  z-index:40;
+}
+.fab:hover{transform:scale(1.06);}
+.fab svg{width:24px;height:24px;}
+
+/* ---------- Modal ---------- */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,0.7);
+  align-items:flex-start;justify-content:center;
+  overflow-y:auto;padding:40px 16px;
+}
+.modal-overlay.active{display:flex;}
+.modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  width:100%;max-width:520px;
+  padding:28px;
+  margin-top:0;
+}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;
+}
+.modal-header h2{font-size:18px;font-weight:700;}
+.modal-close{
+  background:none;border:none;color:var(--text-dim);cursor:pointer;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+}
+.modal-close:hover{background:var(--surface2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);
+  border-radius:10px;padding:12px 14px;
+  margin-bottom:12px;
+}
+.toggle-row .label{font-size:13px;font-weight:500;}
+.toggle-row .sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{
+  position:absolute;inset:0;background:var(--surface3);
+  border-radius:50px;cursor:pointer;transition:.2s;
+}
+.slider:before{
+  content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:.2s;
+}
+input:checked + .slider{background:var(--red);}
+input:checked + .slider:before{transform:translateX(20px);}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.modal-actions .btn{flex:1;}
+
+/* ---------- Users table ---------- */
+.users-table{width:100%;border-collapse:collapse;}
+.users-table th{
+  text-align:left;font-size:11px;color:var(--text-faint);
+  font-weight:600;text-transform:uppercase;letter-spacing:0.03em;
+  padding:10px 12px;border-bottom:1px solid var(--border);
+}
+.users-table td{
+  padding:12px;font-size:13px;border-bottom:1px solid var(--border);
+}
+.users-table tr:hover td{background:var(--surface2);}
+.pro-status{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;padding:4px 10px;border-radius:50px;
+}
+.pro-status.active{background:rgba(212,175,55,0.15);color:var(--gold);}
+.pro-status.inactive{background:var(--surface3);color:var(--text-faint);}
+.pro-status.expired{background:rgba(245,166,35,0.15);color:var(--warn);}
+
+/* ---------- Series episode manager ---------- */
+.episode-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border-radius:10px;
+  padding:10px 12px;margin-bottom:8px;
+}
+.episode-row input{flex:1;}
+.episode-row .ep-num{width:50px;flex:none;}
+
+/* ---------- Settings/JazzCash ---------- */
+.settings-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:24px;margin-bottom:16px;
+}
+.settings-card h3{font-size:15px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--surface3);border:1px solid var(--border);
+  padding:12px 20px;border-radius:50px;font-size:13px;font-weight:500;
+  z-index:200;transition:transform .25s ease;
+  display:flex;align-items:center;gap:8px;
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.success{border-color:rgba(46,204,113,0.4);}
+#toast.error{border-color:rgba(229,9,20,0.4);}
+
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px;}
+
+@media(max-width:600px){
+  .form-row{grid-template-columns:1fr;}
+  .content-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+  .modal{padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo brand">MITV</div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="field">
+      <label>Admin Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@mitv.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" onclick="handleLogin()">Sign In</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo brand">MITV</span>
+      <span class="topbar-title">Admin</span>
+    </div>
+    <div class="topbar-right">
+      <span class="status-pill"><span class="dot"></span> Live</span>
+      <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-page="liveTab" onclick="switchTab('liveTab')">Live TV</div>
+    <div class="tab" data-page="moviesTab" onclick="switchTab('moviesTab')">Movies</div>
+    <div class="tab" data-page="seriesTab" onclick="switchTab('seriesTab')">Series</div>
+    <div class="tab" data-page="usersTab" onclick="switchTab('usersTab')">Users &amp; Pro</div>
+    <div class="tab" data-page="settingsTab" onclick="switchTab('settingsTab')">Settings</div>
+  </div>
+
+  <!-- LIVE TV PAGE -->
+  <div class="page active" id="liveTab">
+    <div class="page-header">
+      <h1>Live TV <span class="count" id="liveCount"></span></h1>
+    </div>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search live channels" oninput="renderGrid('live', this.value)">
+    </div>
+    <div class="content-grid" id="liveGrid"></div>
+  </div>
+
+  <!-- MOVIES PAGE -->
+  <div class="page" id="moviesTab">
+    <div class="page-header">
+      <h1>Movies <span class="count" id="moviesCount"></span></h1>
+    </div>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search movies" oninput="renderGrid('movies', this.value)">
+    </div>
+    <div class="content-grid" id="moviesGrid"></div>
+  </div>
+
+  <!-- SERIES PAGE -->
+  <div class="page" id="seriesTab">
+    <div class="page-header">
+      <h1>Series <span class="count" id="seriesCount"></span></h1>
+    </div>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search series" oninput="renderGrid('series', this.value)">
+    </div>
+    <div class="content-grid" id="seriesGrid"></div>
+  </div>
+
+  <!-- USERS / PRO PAGE -->
+  <div class="page" id="usersTab">
+    <div class="page-header">
+      <h1>Users &amp; Pro <span class="count" id="usersCount"></span></h1>
+    </div>
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search by email" oninput="renderUsers(this.value)">
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="users-table">
+        <thead>
+          <tr><th>Email</th><th>Status</th><th>Expires</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="settingsTab">
+    <div class="page-header"><h1>Settings</h1></div>
+
+    <div class="settings-card">
+      <h3>💳 JazzCash Payment Details</h3>
+      <div class="field">
+        <label>JazzCash Number</label>
+        <input type="text" id="jazzCashNumber" placeholder="03062015326">
+      </div>
+      <div class="field">
+        <label>WhatsApp Number (international format)</label>
+        <input type="text" id="whatsappNumber" placeholder="923062015326">
+      </div>
+      <div class="field">
+        <label>Pro Price</label>
+        <input type="text" id="proPrice" placeholder="Rs 50 / month">
+      </div>
+      <button class="btn btn-primary" onclick="saveAppSettings()" style="width:auto;padding:10px 24px;">Save Settings</button>
+    </div>
+
+    <div class="settings-card">
+      <h3>📱 Force Update</h3>
+      <div class="toggle-row">
+        <div>
+          <div class="label">Require update</div>
+          <div class="sub">Blocks app usage until user updates</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="forceUpdateToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label>Latest Version Name</label>
+        <input type="text" id="latestVersionName" placeholder="1.2.0">
+      </div>
+      <div class="field">
+        <label>Update Message</label>
+        <textarea id="updateMessage" placeholder="A new version is available with bug fixes and improvements."></textarea>
+      </div>
+      <div class="field">
+        <label>Download URL</label>
+        <input type="text" id="downloadUrl" placeholder="https://...">
+      </div>
+      <button class="btn btn-primary" onclick="saveUpdateSettings()" style="width:auto;padding:10px 24px;">Save Update Config</button>
+    </div>
+  </div>
+
+  <button class="fab" id="mainFab" onclick="openAddModal()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- ============ ADD/EDIT MODAL (Live/Movies) ============ -->
+<div class="modal-overlay" id="mediaModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="mediaModalTitle">Add Live Channel</h2>
+      <button class="modal-close" onclick="closeModal('mediaModal')">✕</button>
+    </div>
+    <input type="hidden" id="mediaId">
+    <input type="hidden" id="mediaCategory">
+
+    <div class="field">
+      <label>Title *</label>
+      <input type="text" id="mediaTitle" placeholder="e.g. ARY Digital, Sholay, Kuch Kuch Hota Hai">
+    </div>
+
+    <div class="field">
+      <label>Stream URL *</label>
+      <input type="text" id="mediaStreamUrl" placeholder="https://... (.m3u8, .mp4, masked link, or YouTube URL)">
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Source Type</label>
+        <select id="mediaSourceType">
+          <option value="M3U8">M3U8 / HLS</option>
+          <option value="MP4">MP4 (progressive)</option>
+          <option value="XTREAM">Xtream / masked link</option>
+          <option value="YOUTUBE">YouTube</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Group / Genre</label>
+        <input type="text" id="mediaGroupTitle" placeholder="e.g. News, Action, Drama">
+      </div>
+    </div>
+
+    <div class="field">
+      <label id="posterLabel">Poster / Logo URL</label>
+      <input type="text" id="mediaPosterUrl" placeholder="https://... (.jpg/.png/.svg)">
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Year</label>
+        <input type="text" id="mediaYear" placeholder="2024">
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <input type="text" id="mediaLanguage" placeholder="Hindi / Urdu / English">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea id="mediaDescription" placeholder="Short synopsis..."></textarea>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="label">Free for everyone</div>
+        <div class="sub">Off = Pro subscribers only</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="mediaIsFree" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="label">Featured</div>
+        <div class="sub">Highlight this on the home screen</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="mediaIsFeatured">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteMediaBtn" onclick="deleteCurrentMedia()" style="display:none;">Delete</button>
+      <button class="btn btn-primary" onclick="saveMedia()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SERIES MODAL (show + episodes) ============ -->
+<div class="modal-overlay" id="seriesModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h2 id="seriesModalTitle">Add Series</h2>
+      <button class="modal-close" onclick="closeModal('seriesModal')">✕</button>
+    </div>
+    <input type="hidden" id="seriesId">
+
+    <div class="field">
+      <label>Series Title *</label>
+      <input type="text" id="seriesTitle" placeholder="e.g. Humsafar, Mere Paas Tum Ho">
+    </div>
+    <div class="field">
+      <label>Poster URL</label>
+      <input type="text" id="seriesPosterUrl" placeholder="https://...">
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Year</label>
+        <input type="text" id="seriesYear" placeholder="2024">
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <input type="text" id="seriesLanguage" placeholder="Urdu">
+      </div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="seriesDescription" placeholder="Short synopsis..."></textarea>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">Free for everyone</div>
+        <div class="sub">Applies to newly added episodes by default</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="seriesIsFree" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--text-dim);font-weight:500;">Episodes</label>
+        <button class="btn btn-ghost btn-sm" onclick="addEpisodeRow()">+ Add Episode</button>
+      </div>
+      <div id="episodesList"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteSeriesBtn" onclick="deleteCurrentSeries()" style="display:none;">Delete Series</button>
+      <button class="btn btn-primary" onclick="saveSeries()">Save Series</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ USER PRO EDIT MODAL ============ -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Manage Pro Access</h2>
+      <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+    </div>
+    <input type="hidden" id="userUid">
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="userEmailDisplay" disabled>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">Pro Active</div>
+        <div class="sub">Grants access to all Pro-only content</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="userIsProToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="field">
+      <label>Pro Expires On</label>
+      <input type="date" id="userExpiryDate">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="extendProMonth()">+ 1 Month</button>
+      <button class="btn btn-primary" onclick="saveUserPro()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
